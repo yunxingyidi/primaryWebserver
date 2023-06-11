@@ -22,9 +22,10 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/uio.h>
-#include <map>
+#include <map.h>
 
 #include "../threadlocker/locker.h"
+#include "../time/timer.h"
 class http_handle
 {
 private:
@@ -44,13 +45,21 @@ public:
     };
     http_handle(){};
     ~http_handle(){};
+    void init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode,
+                     int close_log);
     //epoll实例，管理文件描述符
     static int m_epollfd;
-    
     //用户连接数
     static int m_user_count;
+    //根目录
+    char *m_root;
+    //socket文件编号
     int m_sockfd;
     sockaddr_in m_address;
+    // 触发模式
+    int m_TRIGMode;   
+    // 是否开启日志           
+    int m_close_log;             
     // 存储读取的请求报文数据
     char m_read_buf[READ_BUFFER_SIZE];
     // 缓冲区中m_read_buf中数据的最后一个字节的下一个位置

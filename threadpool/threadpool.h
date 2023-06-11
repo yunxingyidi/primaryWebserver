@@ -17,6 +17,7 @@ public:
     threadpool(int act_model, int max_thread = 8, int max_queue = 10000);
     ~threadpool();
     bool append(T* request);
+    bool append(T *request, bool wen);
 private:
     //线程数量
     int thread_num;
@@ -75,6 +76,25 @@ bool threadpool<T>::append(T* request)
     request_queue.push_back(request);
     queue_sem.post()
     queue_locker.unlocker();
+    return true;
+}
+//reactor模式下的请求入队
+bool threadpool<T>::append(T *request, bool wen)
+{
+    m_queuelocker.lock();
+    if (m_workqueue.size() >= m_max_requests)
+    {
+        m_queuelocker.unlock();
+        return false;
+    }
+    //读写事件
+    if(wen)
+        request->m_state = 1;
+    else
+        request->m_state = 0;
+    m_workqueue.push_back(request);
+    m_queuelocker.unlock();
+    m_queuestat.post();
     return true;
 }
 template <typename T>

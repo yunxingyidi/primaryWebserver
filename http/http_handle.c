@@ -28,3 +28,18 @@ void removefd(int epollfd, int fd)
     epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, 0);
     close(fd);
 }
+//初始化一个新的连接
+void http_handle::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode, int close_log)
+{
+    m_sockfd = m_sockfd;
+    m_address = addr;
+    addfd(m_epollfd, sockfd, true, m_TRIGMode);
+    m_root = root;
+    m_TRIGMode = TRIGMode;
+    m_close_log = close_log;
+
+    memset(m_read_buf, '\0', READ_BUFFER_SIZE);
+    memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
+    memset(m_real_file, '\0', FILENAME_LEN);
+}
+
