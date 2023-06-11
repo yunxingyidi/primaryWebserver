@@ -18,15 +18,20 @@ public:
     ~threadpool();
     bool append(T* request);
 private:
+    //线程数量
     int thread_num;
+    //请求数量
     int request_num;
+    //线程数组
     pthread_t *threads;
+    //先入先出请求队列
     std::list<T*> request_queue;
+    //共享资源控制
     locker queue_locker;
     sem queue_sem;
     int actor_model;
     static void* work(void* arg);
-    void run()
+    void handle_request();
 };
 template <typename T>
 threadpool<T>::threadpool(int act_model, int max_thread, int max_queue)
@@ -36,6 +41,7 @@ threadpool<T>::threadpool(int act_model, int max_thread, int max_queue)
     {
         throw std::exception();
     }
+    //逐个创建线程
     for(int i = 0; i < max_thread; i++)
     {
         int flag = pthread_create(threads[i], NULL, work, this);
@@ -72,15 +78,17 @@ bool threadpool<T>::append(T* request)
     return true;
 }
 template <typename T>
+//线程工作函数，在创建时开始运行，在其中不断调用请求处理函数函数run
 void* threadpool<T>::work(void* arg)
 {
     threadpool *p = (threadpool*)arg;
     while(true)
-        p->run();
+        p->handle_request();
     return pool;
 }
 template <typename T>
-void threadpool<T>::run()
+//请求处理函数,取得队头请求消息，进行如处理程序
+void threadpool<T>::handle_request()
 {
     queue_sem.wait()
     queue_locker.lock();
@@ -95,7 +103,6 @@ void threadpool<T>::run()
     if(!run_request)
     {
         return;
-    }
-    
+    }  
 }
 #endif

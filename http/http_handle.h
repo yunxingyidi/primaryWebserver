@@ -33,17 +33,38 @@ public:
     static const int FILENAME_LEN = 200;
     static const int READ_BUFFER_SIZE = 2048;
     static const int WRITE_BUFFER_SIZE = 1024;
-    http_handle(/* args */);
-    ~http_handle();
-};
-
-http_handle::http_handle(/* args */)
-{
+    //请求方法
+    enum METHOD
+    {
+        GET = 0,
+        POST,
+        HEAD,
+        PUT,
+        DELETE
+    };
+    http_handle(){};
+    ~http_handle(){};
+    //epoll实例，管理文件描述符
+    static int m_epollfd;
     
-}
+    //用户连接数
+    static int m_user_count;
+    int m_sockfd;
+    sockaddr_in m_address;
+    // 存储读取的请求报文数据
+    char m_read_buf[READ_BUFFER_SIZE];
+    // 缓冲区中m_read_buf中数据的最后一个字节的下一个位置
+    int m_read_idx;
+    // m_read_buf读取的位置m_checked_idx
+    int m_checked_idx;
+    // m_read_buf中已经解析的字符个数
+    int m_start_line;
+    // 存储发出的响应报文数据
+    char m_write_buf[WRITE_BUFFER_SIZE];
+    // 指示buffer中的长度
+    int m_write_idx;
 
-http_handle::~http_handle()
-{
-}
+
+};
 
 #endif HTTPHADDLE_H
