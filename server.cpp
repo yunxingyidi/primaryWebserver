@@ -257,12 +257,12 @@ void Server::read_event(int sockfd)
             adjust_timer(timer);
         }
 
-        //若监测到读事件，将该事件放入请求队列
+        //若监测到读事件，将该事件放入请求队列，工作线程采用读操作
         m_pool->append(users + sockfd, false);
         while (true)
         {
             //是否正在处理中
-            if (1 == users[sockfd].improv)
+            if (1 == users[sockfd].isrunning)
             {
                 //事件类型关闭连接
                 if (1 == users[sockfd].timer_flag)
@@ -270,7 +270,7 @@ void Server::read_event(int sockfd)
                     deal_timer(timer, sockfd);
                     users[sockfd].timer_flag = 0;
                 }
-                users[sockfd].improv = 0;
+                users[sockfd].isrunning = 0;
                 break;
             }
         }
@@ -305,19 +305,19 @@ void Server::write_event(int sockfd)
         {
             adjust_timer(timer);
         }
-
+        //工作线程采用写操作
         m_pool->append(users + sockfd, true);
 
         while (true)
         {
-            if (1 == users[sockfd].improv)
+            if (1 == users[sockfd].isrunning)
             {
                 if (1 == users[sockfd].timer_flag)
                 {
                     deal_timer(timer, sockfd);
                     users[sockfd].timer_flag = 0;
                 }
-                users[sockfd].improv = 0;
+                users[sockfd].isrunning = 0;
                 break;
             }
         }

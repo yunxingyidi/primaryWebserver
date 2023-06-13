@@ -838,3 +838,126 @@ Connection:keep-alive
 2023-06-13 18:19:22.296581 [info]: timer tick
 2023-06-13 18:19:27.297011 [info]: timer tick
 2023-06-13 18:19:32.297437 [info]: timer tick
+2023-06-13 18:19:37.297734 [info]: timer tick
+2023-06-13 18:19:42.297865 [info]: timer tick
+2023-06-13 18:19:47.298094 [info]: timer tick
+2023-06-13 18:19:52.299170 [info]: timer tick
+2023-06-13 18:19:57.299888 [info]: timer tick
+2023-06-13 18:20:02.300572 [info]: timer tick
+2023-06-13 18:20:07.300888 [info]: timer tick
+2023-06-13 18:20:12.301489 [info]: timer tick
+2023-06-13 18:20:17.301571 [info]: timer tick
+2023-06-13 18:20:22.301827 [info]: timer tick
+2023-06-13 18:20:27.302462 [info]: timer tick
+2023-06-13 18:20:32.302715 [info]: timer tick
+2023-06-13 18:20:37.303594 [info]: timer tick
+2023-06-13 18:20:42.304039 [info]: timer tick
+2023-06-13 18:20:47.304149 [info]: timer tick
+2023-06-13 18:20:52.304211 [info]: timer tick
+2023-06-13 18:20:57.304458 [info]: timer tick
+2023-06-13 18:21:02.304589 [info]: timer tick
+2023-06-13 18:21:20.587761 [info]: timer tick
+2023-06-13 18:21:25.589187 [info]: timer tick
+2023-06-13 18:21:27.261246 [info]: deal with the client(127.0.0.1)
+2023-06-13 18:21:27.261350 [info]: GET / HTTP/1.1
+2023-06-13 18:21:27.261371 [info]: Host: localhost:9006
+2023-06-13 18:21:27.261379 [info]: Connection: keep-alive
+2023-06-13 18:21:27.261385 [info]: sec-ch-ua: "Chromium";v="110", "Not A(Brand";v="24", "Microsoft Edge";v="110"
+2023-06-13 18:21:27.261393 [info]: oop!unknow header: sec-ch-ua: "Chromium";v="110", "Not A(Brand";v="24", "Microsoft Edge";v="110"
+2023-06-13 18:21:27.261401 [info]: sec-ch-ua-mobile: ?0
+2023-06-13 18:21:27.261408 [info]: oop!unknow header: sec-ch-ua-mobile: ?0
+2023-06-13 18:21:27.261415 [info]: sec-ch-ua-platform: "Linux"
+2023-06-13 18:21:27.261422 [info]: oop!unknow header: sec-ch-ua-platform: "Linux"
+2023-06-13 18:21:27.261429 [info]: Upgrade-Insecure-Requests: 1
+2023-06-13 18:21:27.261436 [info]: oop!unknow header: Upgrade-Insecure-Requests: 1
+2023-06-13 18:21:27.261444 [info]: User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63
+2023-06-13 18:21:27.261451 [info]: oop!unknow header: User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63
+2023-06-13 18:21:27.261458 [info]: Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+2023-06-13 18:21:27.261465 [info]: oop!unknow header: Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+2023-06-13 18:21:27.261472 [info]: Purpose: prefetch
+2023-06-13 18:21:27.261480 [info]: oop!unknow header: Purpose: prefetch
+2023-06-13 18:21:27.261487 [info]: Sec-Fetch-Site: none
+2023-06-13 18:21:27.261504 [info]: oop!unknow header: Sec-Fetch-Site: none
+2023-06-13 18:21:27.261512 [info]: Sec-Fetch-Mode: navigate
+2023-06-13 18:21:27.261519 [info]: oop!unknow header: Sec-Fetch-Mode: navigate
+2023-06-13 18:21:27.261526 [info]: Sec-Fetch-User: ?1
+2023-06-13 18:21:27.261533 [info]: oop!unknow header: Sec-Fetch-User: ?1
+2023-06-13 18:21:27.261540 [info]: Sec-Fetch-Dest: document
+2023-06-13 18:21:27.261546 [info]: oop!unknow header: Sec-Fetch-Dest: document
+2023-06-13 18:21:27.261554 [info]: Accept-Encoding: gzip, deflate, br
+2023-06-13 18:21:27.261561 [info]: oop!unknow header: Accept-Encoding: gzip, deflate, br
+2023-06-13 18:21:27.261571 [info]: Accept-Language: en-US,en;q=0.9
+2023-06-13 18:21:27.261578 [info]: oop!unknow header: Accept-Language: en-US,en;q=0.9
+2023-06-13 18:21:27.261585 [info]: 
+2023-06-13 18:21:27.261605 [info]: request:HTTP/1.1 200 OK
+
+2023-06-13 18:21:27.261617 [info]: request:HTTP/1.1 200 OK
+Content-Length:219
+
+2023-06-13 18:21:27.261624 [info]: request:HTTP/1.1 200 OK
+Content-Length:219
+Connection:keep-alive
+
+2023-06-13 18:21:27.261631 [info]: request:HTTP/1.1 200 OK
+Content-Length:219
+Connection:keep-alive
+
+
+2023-06-13 18:21:27.261644 [info]: adjust timer once
+2023-06-13 18:21:27.261686 [info]: send data to the client(127.0.0.1)
+2023-06-13 18:21:27.261701 [info]: adjust timer once
+2023-06-13 18:21:27.320693 [info]: deal with the client(127.0.0.1)
+2023-06-13 18:21:27.320773 [info]: GET /favicon.ico HTTP/1.1
+2023-06-13 18:21:27.320785 [info]: Host: localhost:9006
+2023-06-13 18:21:27.320791 [info]: Connection: keep-alive
+2023-06-13 18:21:27.320796 [info]: sec-ch-ua: "Chromium";v="110", "Not A(Brand";v="24", "Microsoft Edge";v="110"
+2023-06-13 18:21:27.320800 [info]: oop!unknow header: sec-ch-ua: "Chromium";v="110", "Not A(Brand";v="24", "Microsoft Edge";v="110"
+2023-06-13 18:21:27.320805 [info]: sec-ch-ua-mobile: ?0
+2023-06-13 18:21:27.320809 [info]: oop!unknow header: sec-ch-ua-mobile: ?0
+2023-06-13 18:21:27.320814 [info]: User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63
+2023-06-13 18:21:27.320819 [info]: oop!unknow header: User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63
+2023-06-13 18:21:27.320823 [info]: sec-ch-ua-platform: "Linux"
+2023-06-13 18:21:27.320828 [info]: oop!unknow header: sec-ch-ua-platform: "Linux"
+2023-06-13 18:21:27.320832 [info]: Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+2023-06-13 18:21:27.320837 [info]: oop!unknow header: Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+2023-06-13 18:21:27.320841 [info]: Purpose: prefetch
+2023-06-13 18:21:27.320846 [info]: oop!unknow header: Purpose: prefetch
+2023-06-13 18:21:27.320850 [info]: Sec-Fetch-Site: same-origin
+2023-06-13 18:21:27.320855 [info]: oop!unknow header: Sec-Fetch-Site: same-origin
+2023-06-13 18:21:27.320859 [info]: Sec-Fetch-Mode: no-cors
+2023-06-13 18:21:27.320863 [info]: oop!unknow header: Sec-Fetch-Mode: no-cors
+2023-06-13 18:21:27.320868 [info]: Sec-Fetch-Dest: image
+2023-06-13 18:21:27.320872 [info]: oop!unknow header: Sec-Fetch-Dest: image
+2023-06-13 18:21:27.320877 [info]: Referer: http://localhost:9006/
+2023-06-13 18:21:27.320881 [info]: oop!unknow header: Referer: http://localhost:9006/
+2023-06-13 18:21:27.320885 [info]: Accept-Encoding: gzip, deflate, br
+2023-06-13 18:21:27.320890 [info]: oop!unknow header: Accept-Encoding: gzip, deflate, br
+2023-06-13 18:21:27.320897 [info]: Accept-Language: en-US,en;q=0.9
+2023-06-13 18:21:27.320902 [info]: oop!unknow header: Accept-Language: en-US,en;q=0.9
+2023-06-13 18:21:27.320906 [info]: 
+2023-06-13 18:21:27.320914 [info]: request:HTTP/1.1 404 Not Found
+
+2023-06-13 18:21:27.320921 [info]: request:HTTP/1.1 404 Not Found
+Content-Length:49
+
+2023-06-13 18:21:27.320926 [info]: request:HTTP/1.1 404 Not Found
+Content-Length:49
+Connection:keep-alive
+
+2023-06-13 18:21:27.320938 [info]: request:HTTP/1.1 404 Not Found
+Content-Length:49
+Connection:keep-alive
+
+
+2023-06-13 18:21:27.320943 [info]: request:HTTP/1.1 404 Not Found
+Content-Length:49
+Connection:keep-alive
+
+The requested file was not found on this server.
+
+2023-06-13 18:21:27.320952 [info]: adjust timer once
+2023-06-13 18:21:27.320977 [info]: send data to the client(127.0.0.1)
+2023-06-13 18:21:27.320985 [info]: adjust timer once
+2023-06-13 18:21:30.589490 [info]: timer tick
+2023-06-13 18:21:30.987291 [info]: close fd 8
+2023-06-13 18:21:30.988512 [info]: close fd 9

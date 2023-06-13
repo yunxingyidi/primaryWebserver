@@ -99,7 +99,7 @@ void http_handle::init(int sockfd, const sockaddr_in &addr, char *root, int trig
     cgi = 0;
     m_state = 0;
     timer_flag = 0;
-    improv = 0;
+    isrunning = 0;
     //创建缓冲区
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
     memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
@@ -311,7 +311,7 @@ bool http_handle::write()
         cgi = 0;
         m_state = 0;
         timer_flag = 0;
-        improv = 0;
+        isrunning = 0;
         memset(m_read_buf, '\0', READ_BUFFER_SIZE);
         memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
         memset(m_real_file, '\0', FILENAME_LEN);
@@ -381,7 +381,7 @@ bool http_handle::write()
                 cgi = 0;
                 m_state = 0;
                 timer_flag = 0;
-                improv = 0;
+                isrunning = 0;
                 memset(m_read_buf, '\0', READ_BUFFER_SIZE);
                 memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
                 memset(m_real_file, '\0', FILENAME_LEN);

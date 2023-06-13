@@ -91,7 +91,7 @@ public:
         return &m_address;
     }
     int timer_flag; // 是否关闭连接
-    int improv;     // 是否正在处理数据中
+    int isrunning;     // 是否正在处理数据中
     void init();
     // 从m_read_buf读取，并处理请求报文
     HTTP_CODE process_read();

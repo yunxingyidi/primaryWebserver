@@ -148,12 +148,12 @@ void threadpool<T>::handle_request()
             {
                 if (request->read())
                 {
-                    request->improv = 1;
+                    request->isrunning = 1;
                     request->process();
                 }
                 else
                 {
-                    request->improv = 1;
+                    request->isrunning = 1;
                     request->timer_flag = 1;
                 }
             }
@@ -161,11 +161,11 @@ void threadpool<T>::handle_request()
             {
                 if (request->write())
                 {
-                    request->improv = 1;
+                    request->isrunning = 1;
                 }
                 else
                 {
-                    request->improv = 1;
+                    request->isrunning = 1;
                     request->timer_flag = 1;
                 }
             }
