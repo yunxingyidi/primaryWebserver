@@ -221,7 +221,7 @@ void Handle::addfd(int epollfd, int fd, bool one_shot, int TRIGMode)
 }
 
 //信号处理函数
-void Handle::sig_Handler(int sig)
+void Handle::sig_handler(int sig)
 {
     //为保证函数的可重入性，保留原来的errno
     int save_errno = errno;
@@ -235,20 +235,20 @@ void Handle::addsig(int sig, void(Handler)(int), bool restart)
 {
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa));
-    sa.sa_Handler = Handler;
+    sa.sa_handler = Handler;
     if (restart)
         sa.sa_flags |= SA_RESTART;
     sigfillset(&sa.sa_mask);
     assert(sigaction(sig, &sa, NULL) != -1);
 }
-
 //定时处理任务，重新定时以不断触发SIGALRM信号
-void Handle::timer_Handler()
+void Handle::timer_handler()
 {
     m_timer_lst.tick();
     //最小的时间单位为5s
     alarm(m_TIMESLOT);
 }
+
 
 void Handle::show_error(int connfd, const char *info)
 {

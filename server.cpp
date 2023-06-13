@@ -27,12 +27,13 @@ Server::~Server()
     delete m_pool;
 }
 //初始化用户名、数据库等信息
-void Server::init(int port, int log_write, int trigmode, int thread_num, int close_log, int actor_model)
+void Server::init(int port, int log_write, int opt_linger, int trigmode, int thread_num, int close_log, int actor_model)
 {
     m_port = port;
     m_thread_num = thread_num;
     m_log_write = log_write;
     m_TRIGMode = trigmode;
+    m_OPT_LINGER = opt_linger;
     m_close_log = close_log;
     m_actormodel = actor_model;
 }
@@ -65,18 +66,18 @@ void Server::trig_mode()
         m_CONNTrigmode = 1;
     }
 }
-// //初始化日志系统
-// void Server::log_write()
-// {
-//     if (0 == m_close_log)
-//     {
-//         //确定日志类型：同步/异步
-//         if (1 == m_log_write)
-//             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
-//         else
-//             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
-//     }
-// }
+//初始化日志系统
+void Server::log_write()
+{
+    if (0 == m_close_log)
+    {
+        //确定日志类型：同步/异步
+        if (1 == m_log_write)
+            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
+        else
+            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
+    }
+}
 
 //创建线程池
 void Server::thread_pool()
@@ -89,7 +90,7 @@ void Server::thread_pool()
 void Server::eventListen()
 {
     //SOCK_STREAM 表示使用面向字节流的TCP协议，IPV4
-    m_listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    m_listenfd = socket(PF_INET, SOCK_STREAM, 0);
     //匹配socket的close行为
     struct linger tmp = {0, 1};
     //设置套接自选项

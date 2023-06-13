@@ -22,6 +22,7 @@
 
 #include "../threadlocker/locker.h"
 #include "../time/timer.h"
+#include "../log/log.h"
 
 class http_handle
 {

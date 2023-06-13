@@ -365,7 +365,27 @@ bool http_handle::write()
             if (m_linger)
             {
                 //重新初始化HTTP对象**
-                init();
+                bytes_to_send = 0;
+                bytes_have_send = 0;
+                m_check_state = CHECK_STATE_REQUESTLINE;
+                m_linger = false;
+                m_method = GET;
+                m_url = 0;
+                m_version = 0;
+                m_content_length = 0;
+                m_host = 0;
+                m_start_line = 0;
+                m_checked_idx = 0;
+                m_read_idx = 0;
+                m_write_idx = 0;
+                cgi = 0;
+                m_state = 0;
+                timer_flag = 0;
+                improv = 0;
+                memset(m_read_buf, '\0', READ_BUFFER_SIZE);
+                memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
+                memset(m_real_file, '\0', FILENAME_LEN);
+
                 return true;
             }
             else
@@ -411,6 +431,15 @@ http_handle::LINE_STATUS http_handle::parse_line()
         }
     }
     return LINE_OPEN;
+}
+//取消内存映射
+void http_handle::unmap()
+{
+    if (m_file_address)
+    {
+        munmap(m_file_address, m_file_stat.st_size);
+        m_file_address = 0;
+    }
 }
 //有限状态机处理请求报文
 http_handle::HTTP_CODE http_handle::process_read()
@@ -638,4 +667,15 @@ void http_handle::process()
     }
     //注册并监听写事件
     modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode);
+}
+//关闭连接，关闭一个连接，客户总量减一
+void http_handle::close_conn(bool real_close)
+{
+    if (real_close && (m_sockfd != -1))
+    {
+        printf("close %d\n", m_sockfd);
+        removefd(m_epollfd, m_sockfd);
+        m_sockfd = -1;
+        m_user_count--;
+    }
 }

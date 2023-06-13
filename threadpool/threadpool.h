@@ -45,17 +45,17 @@ threadpool<T>::threadpool(int act_model, int max_thread, int max_queue)
     //逐个创建线程
     for(int i = 0; i < max_thread; i++)
     {
-        int flag = pthread_create(threads[i], NULL, work, this);
+        int flag = pthread_create(threads + i, NULL, work, this);
         if(flag)
         {
             delete []threads;
-            throw std::exception()
+            throw std::exception();
         }
-        flag = pthread_detach(thread[i]);
+        flag = pthread_detach(threads[i]);
         if(flag)
         {
             delete []threads;
-            throw std::exception()
+            throw std::exception();
         }
     }
 }
@@ -67,15 +67,15 @@ threadpool<T>::~threadpool()
 template <typename T>
 bool threadpool<T>::append_to(T* request)
 {
-    queue_locker.lock()
+    queue_locker.lock();
     if(request_queue.size() >= request_num)
     {
-        queue_locker.unlock()
+        queue_locker.unlock();
         return false;
     }
     request_queue.push_back(request);
-    queue_sem.post()
-    queue_locker.unlocker();
+    queue_sem.post();
+    queue_locker.unlock();
     return true;
 }
 //reactor模式下的请求入队
@@ -105,25 +105,77 @@ void* threadpool<T>::work(void* arg)
     threadpool *p = (threadpool*)arg;
     while(true)
         p->handle_request();
-    return pool;
+    return p;
 }
 template <typename T>
 //请求处理函数,取得队头请求消息，进行如处理程序
 void threadpool<T>::handle_request()
 {
-    queue_sem.wait()
-    queue_locker.lock();
-    if(request_queue.size() <= 0)
+    // queue_sem.wait();
+    // queue_locker.lock();
+    // if(request_queue.size() <= 0)
+    // {
+    //     queue_locker.unlock();
+    //     return;
+    // }
+    // T* run_request = request_queue.front();
+    // request_queue.pop_front();
+    // queue_locker.unlock();
+    // if(!run_request)
+    // {
+    //     return;
+    // } 
+    while (true)
     {
+        queue_sem.wait();
+        queue_locker.lock();
+        if (request_queue.empty())
+        {
+            queue_locker.unlock();
+            continue;
+        }
+        //
+        T *request = request_queue.front();
+        request_queue.pop_front();
         queue_locker.unlock();
-        return;
-    }
-    T* run_request = request_queue.front();
-    request_queue.pop_front();
-    queue_locker.unlock();
-    if(!run_request)
-    {
-        return;
-    }  
+        if (!request)
+            continue;
+        //Reactor
+        if (1 == actor_model)
+        {
+            //IO事件类型：0为读
+            if (0 == request->m_state)
+            {
+                if (request->read())
+                {
+                    request->improv = 1;
+                    request->process();
+                }
+                else
+                {
+                    request->improv = 1;
+                    request->timer_flag = 1;
+                }
+            }
+            else
+            {
+                if (request->write())
+                {
+                    request->improv = 1;
+                }
+                else
+                {
+                    request->improv = 1;
+                    request->timer_flag = 1;
+                }
+            }
+        }
+        //default:Proactor，线程池不需要进行数据读取，而是直接开始业务处理
+        //之前的操作已经将数据读取到http的read和write的buffer中了
+        else
+        {
+            request->process();
+        }
+    } 
 }
 #endif

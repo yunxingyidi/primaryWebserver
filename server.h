@@ -14,6 +14,7 @@
 
 #include "./threadpool/threadpool.h"
 #include "./http/http_handle.h"
+#include "./log/log.h"
 
 const int MAX_FD = 65536;           //最大文件描述符
 const int MAX_EVENT_NUMBER = 10000; //最大事件数
@@ -25,7 +26,7 @@ public:
     Server();
     ~Server();
 
-    void init(int port, int log_write, int trigmode,int thread_num, int close_log, int actor_model);
+    void init(int port, int log_write, int opt_linger, int trigmode, int thread_num, int close_log, int actor_model);
     void thread_pool();
     void sql_pool();
     void log_write();
@@ -47,6 +48,7 @@ public:
     int m_log_write;//日志类型
     int m_close_log;//是否启动日志
     int m_actormodel;//Reactor/Proactor
+    int m_OPT_LINGER;
     //网络信息
     int m_pipefd[2];//相互连接的套接字
     int m_epollfd;//epoll对象
