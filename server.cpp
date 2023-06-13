@@ -132,8 +132,8 @@ void Server::eventListen()
     alarm(TIMESLOT);
 
     //工具类,信号和描述符基础操作
-    handle::u_pipefd = m_pipefd;
-    handle::u_epollfd = m_epollfd;
+    Handle::u_pipefd = m_pipefd;
+    Handle::u_epollfd = m_epollfd;
 }
 
 //创建一个定时器节点，将连接信息挂载
@@ -201,7 +201,7 @@ bool Server::dealwithnewconn()
         }
         timer(connfd, client_address);
     }
-    // ET
+    // ET边缘触发
     else
     {
         //边缘触发需要一直accept直到为空
@@ -307,11 +307,11 @@ void Server::dealwithread(int sockfd)
     else
     {   
         //先读取数据，再放进请求队列
-        if (users[sockfd].read_once())
+        if (users[sockfd].read())
         {
             LOG_INFO("deal with the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
             //将该事件放入请求队列
-            m_pool->append_p(users + sockfd);
+            m_pool->append_to(users + sockfd);
             if (timer)
             {
                 adjust_timer(timer);

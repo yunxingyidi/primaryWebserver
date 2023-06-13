@@ -270,5 +270,5 @@ void cb_func(client_data *user_data)
     //删除非活动连接在socket上的注册事件
     close(user_data->sockfd);
     //减少连接数
-    http_conn::m_user_count--;
+    http_handle::m_user_count--;
 }

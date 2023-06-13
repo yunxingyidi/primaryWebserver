@@ -30,8 +30,7 @@ struct client_data
 {
     sockaddr_in address;
     int sockfd;
-    timer
- *timer;
+    util_timer *timer;
 };
 
 //定时器类:以一个双向链表实现
@@ -62,28 +61,21 @@ public:
     ~sort_timer_lst();
 
     //添加定时器，内部调用私有成员add_timer
-    void add_timer(timer
- *timer);
+    void add_timer(util_timer *timer);
     //调整定时器，任务发生变化时，调整定时器在链表中的位置
-    void adjust_timer(timer
- *timer);
+    void adjust_timer(util_timer *timer);
     //删除定时器
-    void del_timer(timer
- *timer);
+    void del_timer(util_timer *timer);
     //定时任务处理函数
     void tick();
 
 private:
     //私有成员，被公有成员add_timer和adjust_time调用
     //主要用于调整链表内部结点
-    void add_timer(timer
- *timer, timer
- *lst_head);
+    void add_timer(util_timer *timer, util_timer *head);
     //头尾结点
-    timer
- *head;
-    timer
- *tail;
+    util_timer *head;
+    util_timer *tail;
 };
 
 class Handle
