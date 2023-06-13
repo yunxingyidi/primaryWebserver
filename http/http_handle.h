@@ -23,37 +23,32 @@
 #include "../threadlocker/locker.h"
 #include "../time/timer.h"
 #include "../log/log.h"
-
+/* Http处理类
+ * 2023-6-9
+ * 将从socket中读出的信息按照http报文的格式进行解析，
+ * 得到请求行，请求头部，和请求数据，再根据其状态变化
+ * 进行响应报文的制作
+*/
+#define FILENAME_LEN 2048
+#define READ_BUFFER_SIZE 2048
+#define WRITE_BUFFER_SIZE 1024
 class http_handle
 {
 public:
-    // 读取文件长度上限
-    static const int FILENAME_LEN = 200;
-    // 读缓存大小
-    static const int READ_BUFFER_SIZE = 2048;
-    // 写缓存大小
-    static const int WRITE_BUFFER_SIZE = 1024;
     // HTTP方法名
     enum METHOD
     {
         GET = 0,
-        POST,
-        HEAD,
-        PUT,
-        DELETE,
-        TRACE,
-        OPTIONS,
-        CONNECT,
-        PATH
+        POST
     };
-    // 主状态机状态，检查请求报文中元素
+    // 解析报文进度
     enum CHECK_STATE
     {
-        CHECK_STATE_REQUESTLINE = 0,
-        CHECK_STATE_HEADER,
-        CHECK_STATE_CONTENT
+        REQUESTLINE_STATE = 0,
+        HEADER_STATE,
+        CONTENT_STATE
     };
-    // HTTP状态码
+    // HTTP状态
     enum HTTP_CODE
     {
         NO_REQUEST,
@@ -66,7 +61,7 @@ public:
         CLOSED_CONNECTION
     };
     // 从状态机的状态，文本解析是否成功
-    enum LINE_STATUS
+    enum LINE
     {
         LINE_OK = 0,
         LINE_BAD,
@@ -109,7 +104,7 @@ public:
     // get_line用于将指针向后偏移，指向未处理的字符
     char *get_line() { return m_read_buf + m_start_line; };
     // 从状态机读取一行，分析是请求报文的哪一部分
-    LINE_STATUS parse_line();
+    LINE parse_line();
     // 之后重点介绍**
     void unmap();
     // 根据响应报文格式，生成对应8个部分，以下函数均由do_request调用

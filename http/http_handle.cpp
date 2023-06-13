@@ -79,7 +79,7 @@ void http_handle::init(int sockfd, const sockaddr_in &addr, char *root, int trig
     bytes_to_send = 0;
     bytes_have_send = 0;
     //服务器请求状态
-    m_check_state = CHECK_STATE_REQUESTLINE;
+    m_check_state = REQUESTLINE_STATE;
     m_linger = false;
     //请求方式，默认GET
     m_method = GET;
@@ -297,7 +297,7 @@ bool http_handle::write()
         //将http处理回归初始状态
         bytes_to_send = 0;
         bytes_have_send = 0;
-        m_check_state = CHECK_STATE_REQUESTLINE;
+        m_check_state = REQUESTLINE_STATE;
         m_linger = false;
         m_method = GET;
         m_url = 0;
@@ -367,7 +367,7 @@ bool http_handle::write()
                 //重新初始化HTTP对象**
                 bytes_to_send = 0;
                 bytes_have_send = 0;
-                m_check_state = CHECK_STATE_REQUESTLINE;
+                m_check_state = REQUESTLINE_STATE;
                 m_linger = false;
                 m_method = GET;
                 m_url = 0;
@@ -397,7 +397,7 @@ bool http_handle::write()
 }
 //从状态机，用于分析出一行内容
 //返回值为行的读取状态，有LINE_OK,LINE_BAD,LINE_OPEN
-http_handle::LINE_STATUS http_handle::parse_line()
+http_handle::LINE http_handle::parse_line()
 {
     char temp;
     for (; m_checked_idx < m_read_idx; ++m_checked_idx)
@@ -444,11 +444,11 @@ void http_handle::unmap()
 //有限状态机处理请求报文
 http_handle::HTTP_CODE http_handle::process_read()
 {
-    LINE_STATUS line_status = LINE_OK;
+    LINE LINE = LINE_OK;
     //当状态不发生任何转变时，默认没有请求
     HTTP_CODE ret = NO_REQUEST;
     char *text = 0;
-    while ((m_check_state == CHECK_STATE_CONTENT && line_status == LINE_OK) || ((line_status = parse_line()) == LINE_OK))
+    while ((m_check_state == CONTENT_STATE && LINE == LINE_OK) || ((LINE = parse_line()) == LINE_OK))
     {
         text = get_line();
         m_start_line = m_checked_idx;
@@ -457,7 +457,7 @@ http_handle::HTTP_CODE http_handle::process_read()
         switch (m_check_state)
         {
         //处理请求行
-        case CHECK_STATE_REQUESTLINE:
+        case REQUESTLINE_STATE:
         {
             ret = parse_request_line(text);
             if (ret == BAD_REQUEST)
@@ -465,7 +465,7 @@ http_handle::HTTP_CODE http_handle::process_read()
             break;
         }
         //处理请求头部
-        case CHECK_STATE_HEADER:
+        case HEADER_STATE:
         {
             ret = parse_headers(text);
             if (ret == BAD_REQUEST)
@@ -477,12 +477,12 @@ http_handle::HTTP_CODE http_handle::process_read()
             break;
         }
         //处理请求数据
-        case CHECK_STATE_CONTENT:
+        case CONTENT_STATE:
         {
             ret = parse_content(text);
             if (ret == GET_REQUEST)
                 return do_request();
-            line_status = LINE_OPEN;
+            LINE = LINE_OPEN;
             break;
         }
         default:
@@ -557,7 +557,7 @@ http_handle::HTTP_CODE http_handle::parse_request_line(char *text)
         strcat(m_url, "index.html");
     
     //请求行处理完毕，将主状态机转移处理请求头
-    m_check_state = CHECK_STATE_HEADER;
+    m_check_state = HEADER_STATE;
     return NO_REQUEST;
 }
 
@@ -572,7 +572,7 @@ http_handle::HTTP_CODE http_handle::parse_headers(char *text)
         if (m_content_length != 0)
         {
             //POST需要跳转到消息体处理状态
-            m_check_state = CHECK_STATE_CONTENT;
+            m_check_state = CONTENT_STATE;
             return NO_REQUEST;
         }
         //==0 is GET
