@@ -73,31 +73,32 @@ public:
     ~http_handle() {}
     // 初始化套接字
     void init(int sockfd, const sockaddr_in &addr, char *, int, int);
-    // 关闭HTTP连接
-    void close_conn(bool real_close = true);
-    // http处理函数
     void process();
     // 读取浏览器发送的数据
     bool read();
     // 给相应报文中写入数据
     bool write();
+    // 关闭HTTP连接
+    void close_conn(bool real_close = true);
+    // http处理函数
     sockaddr_in *get_address()
     {
         return &m_address;
     }
-    int timer_flag; // 是否关闭连接
-    int isrunning;     // 是否正在处理数据中
+    int timer_flag;
+    // 是否正在处理数据中 
+    int isrunning;  
     void init();
     // 从m_read_buf读取，并处理请求报文
-    HTTP_CODE process_read();
+    HTTP_CODE http_read();
     // 向m_write_buf写入响应报文数据
-    bool process_write(HTTP_CODE ret);
+    bool http_write(HTTP_CODE ret);
     // 主状态机解析报文中的请求行数据
-    HTTP_CODE parse_request_line(char *text);
+    HTTP_CODE do_request_line(char *text);
     // 主状态机解析报文中的请求头数据
-    HTTP_CODE parse_headers(char *text);
+    HTTP_CODE do_headers(char *text);
     // 主状态机解析报文中的请求内容
-    HTTP_CODE parse_content(char *text);
+    HTTP_CODE do_content(char *text);
     // 生成响应报文
     HTTP_CODE do_request();
     // m_start_line是已经解析的字符

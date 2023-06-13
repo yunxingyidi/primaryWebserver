@@ -111,20 +111,6 @@ template <typename T>
 //请求处理函数,取得队头请求消息，进行如处理程序
 void threadpool<T>::handle_request()
 {
-    // queue_sem.wait();
-    // queue_locker.lock();
-    // if(request_queue.size() <= 0)
-    // {
-    //     queue_locker.unlock();
-    //     return;
-    // }
-    // T* run_request = request_queue.front();
-    // request_queue.pop_front();
-    // queue_locker.unlock();
-    // if(!run_request)
-    // {
-    //     return;
-    // } 
     while (true)
     {
         queue_sem.wait();

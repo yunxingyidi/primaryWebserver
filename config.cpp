@@ -29,22 +29,22 @@ void Config::get_arg(int argc, char*argv[]){
             PORT = atoi(optarg);
             break;
         }
-        case 'm':
+        case 't':
         {
             trig_mode = atoi(optarg);
             break;
         }
-        case 't':
+        case 'n':
         {
             thread_num = atoi(optarg);
             break;
         }
-        case 'c':
+        case 'l':
         {
             log = atoi(optarg);
             break;
         }
-        case 'a':
+        case 'm':
         {
             actor_model = atoi(optarg);
             break;

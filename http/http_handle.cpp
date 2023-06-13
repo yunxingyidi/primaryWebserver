@@ -1,6 +1,5 @@
 #include "http_handle.h"
 
-//定义http响应的一些状态信息
 const char *ok_200_title = "OK";
 const char *error_400_title = "Bad Request";
 const char *error_400_form = "Your request has bad syntax or is inherently impossible to staisfy.\n";
@@ -49,7 +48,7 @@ void removefd(int epollfd, int fd)
 //避免并发访问的竞争条件。
 //通过设置 EPOLLONESHOT，
 //即使多个线程同时监听同一个文件描述符的事件，也只有一个线程能够成功处理事件。
-void modfd(int epollfd, int fd, int ev, int trig_mode)
+void resetfd(int epollfd, int fd, int ev, int trig_mode)
 {
     epoll_event event;
     event.data.fd = fd;
@@ -60,6 +59,87 @@ void modfd(int epollfd, int fd, int ev, int trig_mode)
         event.events = ev | EPOLLONESHOT | EPOLLRDHUP;
 
     epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);
+}
+void http_handle::process()
+{
+    //当工作线程处理时调用process，要先读再分析再写
+    HTTP_CODE read_ret = http_read();
+    if (read_ret == NO_REQUEST)
+    {
+        //注册并监听读事件
+        resetfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
+        return;
+    }
+    //调用http_write完成报文响应
+    bool write_ret = http_write(read_ret);
+    if (!write_ret)
+    {
+        close_conn();
+    }
+    //注册并监听写事件
+    resetfd(m_epollfd, m_sockfd, EPOLLOUT, m_trig_mode);
+}
+//读取并分析请求报文
+http_handle::HTTP_CODE http_handle::http_read()
+{
+    //当该行内容完全读出
+    LINE LINE = LINE_OK;
+    //当状态不发生任何转变时，默认没有请求
+    HTTP_CODE ret = NO_REQUEST;
+    char *text = 0;
+    while ((m_check_state == CONTENT_STATE && LINE == LINE_OK) || ((LINE = parse_line()) == LINE_OK))
+    {
+        text = get_line();
+        m_start_line = m_checked_idx;
+        LOG_INFO("%s", text);
+        //确定处理的是请求报文的哪一部分
+        switch (m_check_state)
+        {
+        //当前为请求行状态
+        case REQUESTLINE_STATE:
+        {
+            ret = do_request_line(text);
+            if (ret == BAD_REQUEST)
+                return BAD_REQUEST;
+            break;
+        }
+        //当前为请求头部状态
+        case HEADER_STATE:
+        {
+            ret = do_headers(text);
+            if (ret == BAD_REQUEST)
+                return BAD_REQUEST;
+            else if (ret == GET_REQUEST)
+            {
+                return do_request();
+            }
+            break;
+        }
+        //处理请求数据
+        case CONTENT_STATE:
+        {
+            ret = do_content(text);
+            if (ret == GET_REQUEST)
+                return do_request();
+            LINE = LINE_OPEN;
+            break;
+        }
+        default:
+            return INTERNAL_ERROR;
+        }
+    }
+    return NO_REQUEST;
+}
+//关闭连接，关闭一个连接，客户总量减一
+void http_handle::close_conn(bool real_close)
+{
+    if (real_close && (m_sockfd != -1))
+    {
+        printf("close %d\n", m_sockfd);
+        removefd(m_epollfd, m_sockfd);
+        m_sockfd = -1;
+        m_user_count--;
+    }
 }
 
 //初始化一个新的连接
@@ -224,7 +304,7 @@ bool http_handle::add_content(const char *content)
 }
 
 //生成响应报文
-bool http_handle::process_write(HTTP_CODE ret)
+bool http_handle::http_write(HTTP_CODE ret)
 {
     switch (ret)
     {
@@ -292,7 +372,7 @@ bool http_handle::write()
     if (bytes_to_send == 0)
     {
         //写操作需要防止线程竞争
-        modfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
+        resetfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
 
         //将http处理回归初始状态
         bytes_to_send = 0;
@@ -329,7 +409,7 @@ bool http_handle::write()
             if (errno == EAGAIN)
             {
                 //仍需要将其置为写
-                modfd(m_epollfd, m_sockfd, EPOLLOUT, m_trig_mode);
+                resetfd(m_epollfd, m_sockfd, EPOLLOUT, m_trig_mode);
                 return true;
             }
             unmap();
@@ -360,7 +440,7 @@ bool http_handle::write()
             //如果发送失败，但不是缓冲区问题，取消映射
             unmap();
             //重新注册写事件,将其置为可读触发
-            modfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
+            resetfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
             //浏览器的请求为长连接
             if (m_linger)
             {
@@ -442,57 +522,8 @@ void http_handle::unmap()
     }
 }
 //有限状态机处理请求报文
-http_handle::HTTP_CODE http_handle::process_read()
-{
-    LINE LINE = LINE_OK;
-    //当状态不发生任何转变时，默认没有请求
-    HTTP_CODE ret = NO_REQUEST;
-    char *text = 0;
-    while ((m_check_state == CONTENT_STATE && LINE == LINE_OK) || ((LINE = parse_line()) == LINE_OK))
-    {
-        text = get_line();
-        m_start_line = m_checked_idx;
-        LOG_INFO("%s", text);
-        //确定处理的是请求报文的哪一部分
-        switch (m_check_state)
-        {
-        //处理请求行
-        case REQUESTLINE_STATE:
-        {
-            ret = parse_request_line(text);
-            if (ret == BAD_REQUEST)
-                return BAD_REQUEST;
-            break;
-        }
-        //处理请求头部
-        case HEADER_STATE:
-        {
-            ret = parse_headers(text);
-            if (ret == BAD_REQUEST)
-                return BAD_REQUEST;
-            else if (ret == GET_REQUEST)
-            {
-                return do_request();
-            }
-            break;
-        }
-        //处理请求数据
-        case CONTENT_STATE:
-        {
-            ret = parse_content(text);
-            if (ret == GET_REQUEST)
-                return do_request();
-            LINE = LINE_OPEN;
-            break;
-        }
-        default:
-            return INTERNAL_ERROR;
-        }
-    }
-    return NO_REQUEST;
-}
 //解析http请求行，获得请求方法，目标url及http版本号
-http_handle::HTTP_CODE http_handle::parse_request_line(char *text)
+http_handle::HTTP_CODE http_handle::do_request_line(char *text)
 {
     //在HTTP报文中，请求行用来说明请求类型
     //要访问的资源以及所使用的HTTP版本，其中各个部分之间通过\t或空格分隔。
@@ -562,7 +593,7 @@ http_handle::HTTP_CODE http_handle::parse_request_line(char *text)
 }
 
 //解析http请求的一个头部信息
-http_handle::HTTP_CODE http_handle::parse_headers(char *text)
+http_handle::HTTP_CODE http_handle::do_headers(char *text)
 {
     //判断是空行还是请求头
     if (text[0] == '\0')
@@ -604,19 +635,18 @@ http_handle::HTTP_CODE http_handle::parse_headers(char *text)
         text += strspn(text, " \t");
         m_host = text;
     }
-    else
-    {
-        LOG_INFO("oop!unknow header: %s", text);
-    }
+    // else
+    // {
+    //     LOG_INFO("oop!unknow header: %s", text);
+    // }
     return NO_REQUEST;
 }
 //判断http请求是否被完整读入
-http_handle::HTTP_CODE http_handle::parse_content(char *text)
+http_handle::HTTP_CODE http_handle::do_content(char *text)
 {
     if (m_read_idx >= (m_content_length + m_checked_idx))
     {
         text[m_content_length] = '\0';
-        //POST请求中最后为输入的用户名和密码
         m_string = text;
         return GET_REQUEST;
     }
@@ -648,34 +678,4 @@ http_handle::HTTP_CODE http_handle::do_request()
 
     //表示请求文件存在，且可以访问
     return FILE_REQUEST;
-}
-void http_handle::process()
-{
-    //NO_REQUEST，表示请求不完整，需要继续接收请求数据
-    HTTP_CODE read_ret = process_read();
-    if (read_ret == NO_REQUEST)
-    {
-        //注册并监听读事件
-        modfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
-        return;
-    }
-    //调用process_write完成报文响应
-    bool write_ret = process_write(read_ret);
-    if (!write_ret)
-    {
-        close_conn();
-    }
-    //注册并监听写事件
-    modfd(m_epollfd, m_sockfd, EPOLLOUT, m_trig_mode);
-}
-//关闭连接，关闭一个连接，客户总量减一
-void http_handle::close_conn(bool real_close)
-{
-    if (real_close && (m_sockfd != -1))
-    {
-        printf("close %d\n", m_sockfd);
-        removefd(m_epollfd, m_sockfd);
-        m_sockfd = -1;
-        m_user_count--;
-    }
 }
