@@ -1,6 +1,6 @@
 #include "server.h"
 
-//主要完成服务器初始化：http连接、设置根目录、开启定时器对象
+// 完成服务器功能初始化
 Server::Server()
 {
     //http_handle最大连接数
@@ -8,14 +8,14 @@ Server::Server()
     //root文件夹路径
     char server_path[200];
     getcwd(server_path, 200);
-    char root[6] = "/root";
+    char root[6] = "/file";
     m_root = (char *)malloc(strlen(server_path) + strlen(root) + 1);
     strcpy(m_root, server_path);
     strcat(m_root, root);
     //定时器，创建储存定时器
     users_timer = new client_data[MAX_FD];
 }
-//服务器资源释放
+// 服务器资源释放
 Server::~Server()
 {
     close(m_epollfd);
@@ -26,7 +26,7 @@ Server::~Server()
     delete[] users_timer;
     delete m_pool;
 }
-//初始化用户名、数据库等信息
+// 完成服务器参数初始化
 void Server::init(int port, int log_write, int opt_linger, int trig_mode, int thread_num, int log, int actor_model)
 {
     m_port = port;
@@ -41,32 +41,28 @@ void Server::init(int port, int log_write, int opt_linger, int trig_mode, int th
 //设置epoll的触发模式：ET、LT，包括连接和监听两种
 void Server::trig_mode()
 {
-    //LT + LT
     if (0 == m_trig_mode)
     {
         m_listen_trig_mode = 0;
         m_con_trig_mode = 0;
     }
-    //LT + ET
     else if (1 == m_trig_mode)
     {
         m_listen_trig_mode = 0;
         m_con_trig_mode = 1;
     }
-    //ET + LT
     else if (2 == m_trig_mode)
     {
         m_listen_trig_mode = 1;
         m_con_trig_mode = 0;
     }
-    //ET + ET
     else if (3 == m_trig_mode)
     {
         m_listen_trig_mode = 1;
         m_con_trig_mode = 1;
     }
 }
-//初始化日志系统
+//初始化日志
 void Server::log_init()
 {
     if (0 == m_log)
@@ -78,7 +74,6 @@ void Server::log_init()
             Log::get_instance()->init("./ServerLog", m_log, 2000, 800000, 0);
     }
 }
-
 //创建线程池
 void Server::thread_pool()
 {
@@ -136,50 +131,72 @@ void Server::socket_monitor()
     Handle::u_pipefd = m_pipefd;
     Handle::u_epollfd = m_epollfd;
 }
-
-//创建一个定时器节点，将连接信息挂载
-void Server::timer(int connfd, struct sockaddr_in client_address)
+// 服务器主线程
+void Server::Loop()
 {
-    //建立一个http事件处理
-    users[connfd].init(connfd, client_address, m_root, m_con_trig_mode, m_log);
-    //初始化client_data数据
-    //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
-    users_timer[connfd].address = client_address;
-    users_timer[connfd].sockfd = connfd;
-    util_timer *timer = new util_timer;
-    timer->user_data = &users_timer[connfd];
-    timer->cb_func = cb_func;
-    time_t cur = time(NULL);
-    //TIMESLOT:最小时间间隔单位为5s
-    timer->expire = cur + 3 * TIMESLOT;
-    users_timer[connfd].timer = timer;
-    handle.m_timer_lst.add_timer(timer);
-}
-
-//若数据活跃，则将定时器节点往后延迟3个时间单位
-//并对新的定时器在链表上的位置进行调整
-void Server::adjust_timer(util_timer *timer)
-{
-    time_t cur = time(NULL);
-    timer->expire = cur + 3 * TIMESLOT;
-    handle.m_timer_lst.adjust_timer(timer);
-    LOG_INFO("%s", "adjust timer once");
-}
-
-//删除定时器节点，关闭连接
-void Server::deal_timer(util_timer *timer, int sockfd)
-{
-    timer->cb_func(&users_timer[sockfd]);
-    if (timer)
+    bool timeout = false;
+    bool stop = false;
+    //不停止一直运行
+    while (!stop)
     {
-        handle.m_timer_lst.del_timer(timer);
+        //等待所监控文件描述符上有事件的产生
+        int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
+        //返回请求数目
+        if (number < 0 && errno != EINTR)
+        {
+            LOG_ERROR("%s", "epoll failure");
+            break;
+        }
+        //对所有就绪事件进行处理
+        for (int i = 0; i < number; i++)
+        {
+            int sockfd = events[i].data.fd;
+            //如果接受到的是当前的客户建立连接
+            if (sockfd == m_listenfd)
+            {
+                bool flag = conn_event();
+                if (false == flag)
+                    continue;
+            }
+            //当events为EPOLLRDHUP | EPOLLHUP | EPOLLERR，处理异常事件
+            else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
+            {
+                //服务器端关闭连接，移除对应的定时器
+                util_timer *timer = users_timer[sockfd].timer;
+                deal_timer(timer, sockfd);
+            }
+            //处理定时器信号
+            else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN))
+            {
+                //接收到SIGALRM信号，timeout设置为True
+                bool flag = signal_event(timeout, stop);
+                if (false == flag)
+                    LOG_ERROR("%s", "dealclientdata failure");
+            }
+            //处理客户连接上接收到的数据
+            else if (events[i].events & EPOLLIN)
+            {
+                read_event(sockfd);
+            }
+            //处理客户连接上send的数据
+            else if (events[i].events & EPOLLOUT)
+            {
+                write_event(sockfd);
+            }
+        }
+
+        //处理定时器为非必须事件，收到信号并不是立马处理
+        //完成读写事件后，再进行处理
+        if (timeout)
+        {
+            handle.timer_handler();
+            LOG_INFO("%s", "timer tick");
+            timeout = false;
+        }
     }
-
-    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
 }
-
 //http 处理用户数据
-bool Server::dealwithnewconn()
+bool Server::conn_event()
 {
     struct sockaddr_in client_address;
     socklen_t client_addrlength = sizeof(client_address);
@@ -226,54 +243,8 @@ bool Server::dealwithnewconn()
     }
     return true;
 }
-
-//处理定时器信号,set the timeout ture
-bool Server::dealwithsignal(bool &timeout, bool &stop_server)
-{
-    int ret = 0;
-    int sig;
-    char signals[1024];
-    //从管道读端读出信号值，成功返回字节数，失败返回-1
-    //正常情况下，这里的ret返回值总是1，只有14和15两个ASCII码对应的字符
-    ret = recv(m_pipefd[0], signals, sizeof(signals), 0);
-    if (ret == -1)
-    {
-        // handle the error
-        return false;
-    }
-    else if (ret == 0)
-    {
-        return false;
-    }
-    else
-    {
-        //处理信号值对应的逻辑
-        for (int i = 0; i < ret; ++i)
-        {
-            
-            //这里面明明是字符
-            switch (signals[i])
-            {
-            //这里是整型
-            case SIGALRM:
-            {
-                timeout = true;
-                break;
-            }
-            //关闭服务器
-            case SIGTERM:
-            {
-                stop_server = true;
-                break;
-            }
-            }
-        }
-    }
-    return true;
-}
-
 //处理客户连接上接收到的数据
-void Server::dealwithread(int sockfd)
+void Server::read_event(int sockfd)
 {
     //创建定时器临时变量，将该连接对应的定时器取出来
     util_timer *timer = users_timer[sockfd].timer;
@@ -311,7 +282,6 @@ void Server::dealwithread(int sockfd)
         if (users[sockfd].read())
         {
             LOG_INFO("deal with the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
-            //将该事件放入请求队列
             m_pool->append_to(users + sockfd);
             if (timer)
             {
@@ -324,9 +294,8 @@ void Server::dealwithread(int sockfd)
         }
     }
 }
-
 //写操作
-void Server::dealwithwrite(int sockfd)
+void Server::write_event(int sockfd)
 {
     util_timer *timer = users_timer[sockfd].timer;
     //reactor
@@ -371,68 +340,90 @@ void Server::dealwithwrite(int sockfd)
         }
     }
 }
-
-//事件回环（即服务器主线程）
-void Server::Loop()
+//创建一个定时器节点，将连接信息挂载
+void Server::timer(int connfd, struct sockaddr_in client_address)
 {
-    bool timeout = false;
-    bool stop_server = false;
-    //不停止一直运行
-    while (!stop_server)
-    {
-        //等待所监控文件描述符上有事件的产生
-        int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
-        //返回请求数目
-        if (number < 0 && errno != EINTR)
-        {
-            LOG_ERROR("%s", "epoll failure");
-            break;
-        }
-        //对所有就绪事件进行处理
-        for (int i = 0; i < number; i++)
-        {
-            int sockfd = events[i].data.fd;
-            //如果接受到的是当前的客户建立连接
-            if (sockfd == m_listenfd)
-            {
-                bool flag = dealwithnewconn();
-                if (false == flag)
-                    continue;
-            }
-            //当events为EPOLLRDHUP | EPOLLHUP | EPOLLERR，处理异常事件
-            else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
-            {
-                //服务器端关闭连接，移除对应的定时器
-                util_timer *timer = users_timer[sockfd].timer;
-                deal_timer(timer, sockfd);
-            }
-            //处理定时器信号
-            else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN))
-            {
-                //接收到SIGALRM信号，timeout设置为True
-                bool flag = dealwithsignal(timeout, stop_server);
-                if (false == flag)
-                    LOG_ERROR("%s", "dealclientdata failure");
-            }
-            //处理客户连接上接收到的数据
-            else if (events[i].events & EPOLLIN)
-            {
-                dealwithread(sockfd);
-            }
-            //处理客户连接上send的数据
-            else if (events[i].events & EPOLLOUT)
-            {
-                dealwithwrite(sockfd);
-            }
-        }
+    //建立一个http事件处理
+    users[connfd].init(connfd, client_address, m_root, m_con_trig_mode, m_log);
+    //初始化client_data数据
+    //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
+    users_timer[connfd].address = client_address;
+    users_timer[connfd].sockfd = connfd;
+    util_timer *timer = new util_timer;
+    timer->user_data = &users_timer[connfd];
+    timer->cb_func = cb_func;
+    time_t cur = time(NULL);
+    //TIMESLOT:最小时间间隔单位为5s
+    timer->expire = cur + 3 * TIMESLOT;
+    users_timer[connfd].timer = timer;
+    handle.m_timer_lst.add_timer(timer);
+}
 
-        //处理定时器为非必须事件，收到信号并不是立马处理
-        //完成读写事件后，再进行处理
-        if (timeout)
+//若数据活跃，则将定时器节点往后延迟3个时间单位
+//并对新的定时器在链表上的位置进行调整
+void Server::adjust_timer(util_timer *timer)
+{
+    time_t cur = time(NULL);
+    timer->expire = cur + 3 * TIMESLOT;
+    handle.m_timer_lst.adjust_timer(timer);
+    LOG_INFO("%s", "adjust timer once");
+}
+
+//删除定时器节点，关闭连接
+void Server::deal_timer(util_timer *timer, int sockfd)
+{
+    timer->cb_func(&users_timer[sockfd]);
+    if (timer)
+    {
+        handle.m_timer_lst.del_timer(timer);
+    }
+
+    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
+}
+
+
+//处理定时器信号,set the timeout ture
+bool Server::signal_event(bool &timeout, bool &stop)
+{
+    int ret = 0;
+    int sig;
+    char signals[1024];
+    //从管道读端读出信号值，成功返回字节数，失败返回-1
+    //正常情况下，这里的ret返回值总是1，只有14和15两个ASCII码对应的字符
+    ret = recv(m_pipefd[0], signals, sizeof(signals), 0);
+    if (ret == -1)
+    {
+        // handle the error
+        return false;
+    }
+    else if (ret == 0)
+    {
+        return false;
+    }
+    else
+    {
+        //处理信号值对应的逻辑
+        for (int i = 0; i < ret; ++i)
         {
-            handle.timer_handler();
-            LOG_INFO("%s", "timer tick");
-            timeout = false;
+            
+            //这里面明明是字符
+            switch (signals[i])
+            {
+            //这里是整型
+            case SIGALRM:
+            {
+                timeout = true;
+                break;
+            }
+            //关闭服务器
+            case SIGTERM:
+            {
+                stop = true;
+                break;
+            }
+            }
         }
     }
+    return true;
 }
+

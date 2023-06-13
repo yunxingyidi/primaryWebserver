@@ -40,38 +40,29 @@ public:
     void timer(int connfd, struct sockaddr_in client_address);
     void adjust_timer(util_timer *timer);
     void deal_timer(util_timer *timer, int sockfd);
-    bool dealwithnewconn();
-    bool dealwithsignal(bool& timeout, bool& stop_server);
-    void dealwithread(int sockfd);
-    void dealwithwrite(int sockfd);
+    bool conn_event();
+    bool signal_event(bool& timeout, bool& stop);
+    void read_event(int sockfd);
+    void write_event(int sockfd);
 
 public:
-    //基础信息
+    epoll_event events[MAX_EVENT_NUMBER];
+    int m_listenfd;//监听套接字
+    int m_trig_mode;//ET/LT
+    int m_listen_trig_mode;//ET/LT
+    int m_con_trig_mode;//ET/LT
     int m_port;//端口
     char *m_root;//根目录
     int m_log_write;//日志类型
     int m_log;//是否启动日志
     int m_actormodel;//Reactor/Proactor
     int m_OPT_LINGER;
-    //网络信息
     int m_pipefd[2];//相互连接的套接字
     int m_epollfd;//epoll对象
     http_handle *users;//单个http连接
-
-    //线程池相关
     threadpool<http_handle> *m_pool;
     int m_thread_num;
-
-    //epoll_event相关
-    epoll_event events[MAX_EVENT_NUMBER];
-    int m_listenfd;//监听套接字
-    int m_trig_mode;//ET/LT
-    int m_listen_trig_mode;//ET/LT
-    int m_con_trig_mode;//ET/LT
-
-    //定时器相关
     client_data *users_timer;
-    //工具类
     Handle handle;
 };
 #endif
