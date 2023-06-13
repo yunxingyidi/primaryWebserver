@@ -3,36 +3,21 @@
 Config::Config(){
     //端口号,默认9006
     PORT = 9006;
-
-    //日志写入方式，默认同步
-    LOGWrite = 0;
-
-    //触发组合模式,默认listenfd LT + connfd LT
-    TRIGMode = 0;
-
-    //listenfd触发模式，默认LT
-    LISTENTrigmode = 0;
-
-    //connfd触发模式，默认LT
-    CONNTrigmode = 0;
-
-    //优雅关闭链接，默认不使用
-    OPT_LINGER = 0;
-
-    //数据库连接池数量,默认8
-    sql_num = 8;
-
-    //线程池内的线程数量,默认8
+    //默认listenfd LT + connfd LT
+    trig_mode = 0;
+    //默认水平触发
+    listen_trig_mode = 0;
+    //默认水平触发
+    con_trig_mode = 0;
+    //线程池内的线程数量,默认10
     thread_num = 10;
-
     //关闭日志,默认不关闭
-    close_log = 0;
-
+    log = 0;
     //并发模型,默认是proactor
     actor_model = 0;
 }
 
-void Config::parse_arg(int argc, char*argv[]){
+void Config::get_arg(int argc, char*argv[]){
     int opt;
     const char *str = "p:l:m:o:s:t:c:a:";
     while ((opt = getopt(argc, argv, str)) != -1)
@@ -44,24 +29,9 @@ void Config::parse_arg(int argc, char*argv[]){
             PORT = atoi(optarg);
             break;
         }
-        case 'l':
-        {
-            LOGWrite = atoi(optarg);
-            break;
-        }
         case 'm':
         {
-            TRIGMode = atoi(optarg);
-            break;
-        }
-        case 'o':
-        {
-            OPT_LINGER = atoi(optarg);
-            break;
-        }
-        case 's':
-        {
-            sql_num = atoi(optarg);
+            trig_mode = atoi(optarg);
             break;
         }
         case 't':
@@ -71,7 +41,7 @@ void Config::parse_arg(int argc, char*argv[]){
         }
         case 'c':
         {
-            close_log = atoi(optarg);
+            log = atoi(optarg);
             break;
         }
         case 'a':

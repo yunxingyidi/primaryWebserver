@@ -202,12 +202,12 @@ int Handle::setnonblocking(int fd)
 }
 
 //将内核事件表注册读事件，ET模式，是否选择开启EPOLLONESHOT
-void Handle::addfd(int epollfd, int fd, bool one_shot, int TRIGMode)
+void Handle::addfd(int epollfd, int fd, bool one_shot, int trig_mode)
 {
     epoll_event event;
     event.data.fd = fd;
 
-    if (1 == TRIGMode)
+    if (1 == trig_mode)
         event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
     else
         event.events = EPOLLIN | EPOLLRDHUP;

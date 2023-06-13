@@ -27,14 +27,14 @@ Server::~Server()
     delete m_pool;
 }
 //初始化用户名、数据库等信息
-void Server::init(int port, int log_write, int opt_linger, int trigmode, int thread_num, int close_log, int actor_model)
+void Server::init(int port, int log_write, int opt_linger, int trig_mode, int thread_num, int log, int actor_model)
 {
     m_port = port;
     m_thread_num = thread_num;
     m_log_write = log_write;
-    m_TRIGMode = trigmode;
+    m_trig_mode = trig_mode;
     m_OPT_LINGER = opt_linger;
-    m_close_log = close_log;
+    m_log = log;
     m_actormodel = actor_model;
 }
 
@@ -42,40 +42,40 @@ void Server::init(int port, int log_write, int opt_linger, int trigmode, int thr
 void Server::trig_mode()
 {
     //LT + LT
-    if (0 == m_TRIGMode)
+    if (0 == m_trig_mode)
     {
-        m_LISTENTrigmode = 0;
-        m_CONNTrigmode = 0;
+        m_listen_trig_mode = 0;
+        m_con_trig_mode = 0;
     }
     //LT + ET
-    else if (1 == m_TRIGMode)
+    else if (1 == m_trig_mode)
     {
-        m_LISTENTrigmode = 0;
-        m_CONNTrigmode = 1;
+        m_listen_trig_mode = 0;
+        m_con_trig_mode = 1;
     }
     //ET + LT
-    else if (2 == m_TRIGMode)
+    else if (2 == m_trig_mode)
     {
-        m_LISTENTrigmode = 1;
-        m_CONNTrigmode = 0;
+        m_listen_trig_mode = 1;
+        m_con_trig_mode = 0;
     }
     //ET + ET
-    else if (3 == m_TRIGMode)
+    else if (3 == m_trig_mode)
     {
-        m_LISTENTrigmode = 1;
-        m_CONNTrigmode = 1;
+        m_listen_trig_mode = 1;
+        m_con_trig_mode = 1;
     }
 }
 //初始化日志系统
-void Server::log_write()
+void Server::log_init()
 {
-    if (0 == m_close_log)
+    if (0 == m_log)
     {
         //确定日志类型：同步/异步
         if (1 == m_log_write)
-            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
+            Log::get_instance()->init("./ServerLog", m_log, 2000, 800000, 800);
         else
-            Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
+            Log::get_instance()->init("./ServerLog", m_log, 2000, 800000, 0);
     }
 }
 
@@ -87,7 +87,7 @@ void Server::thread_pool()
 }
 
 //服务器段开启一个socket进行监听，主要对m_listenfd进行操作。
-void Server::eventListen()
+void Server::socket_monitor()
 {
     //SOCK_STREAM 表示使用面向字节流的TCP协议，IPV4
     m_listenfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -119,7 +119,7 @@ void Server::eventListen()
     //新建epoll，最多处理10个事件
     m_epollfd = epoll_create(10);
 
-    handle.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode);
+    handle.addfd(m_epollfd, m_listenfd, false, m_listen_trig_mode);
     http_handle::m_epollfd = m_epollfd;
     //socketpair()函数用于创建一对无名的、相互连接的套接子,此部分用于全双工通信。
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
@@ -141,7 +141,7 @@ void Server::eventListen()
 void Server::timer(int connfd, struct sockaddr_in client_address)
 {
     //建立一个http事件处理
-    users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log);
+    users[connfd].init(connfd, client_address, m_root, m_con_trig_mode, m_log);
     //初始化client_data数据
     //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
     users_timer[connfd].address = client_address;
@@ -184,7 +184,7 @@ bool Server::dealwithnewconn()
     struct sockaddr_in client_address;
     socklen_t client_addrlength = sizeof(client_address);
     //LT水平触发
-    if (0 == m_LISTENTrigmode)
+    if (0 == m_listen_trig_mode)
     {
         //对socket进行接受
         int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
@@ -373,7 +373,7 @@ void Server::dealwithwrite(int sockfd)
 }
 
 //事件回环（即服务器主线程）
-void Server::eventLoop()
+void Server::Loop()
 {
     bool timeout = false;
     bool stop_server = false;

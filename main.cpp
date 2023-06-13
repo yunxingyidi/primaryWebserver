@@ -1,34 +1,23 @@
 #include "config.h"
-
-//服务器主程序，调用WebServer类实现Web服务器
+//服务器主程序，实现Web服务器
 int main(int argc, char *argv[])
 {
-    //命令行解析
+    //初始化命令
     Config config;
-    config.parse_arg(argc, argv);
-
+    config.get_arg(argc, argv);
     Server server;
-
-    //初始化
-    server.init(config.PORT, config.LOGWrite, 
-                config.OPT_LINGER, config.TRIGMode, config.thread_num, 
-                config.close_log, config.actor_model);
-    
-
-    //日志
-    server.log_write();
-
-    //线程池
+    //初始化web服务器
+    server.init(config.PORT, 0, 0, config.trig_mode, 
+                config.thread_num, config.log, config.actor_model);
+    //初始化日志功能
+    server.log_init();
+    //初始化线程池线程池
     server.thread_pool();
-
-    //触发模式
+    //选择触发模式
     server.trig_mode();
-
-    //监听
-    server.eventListen();
-
-    //运行
-    server.eventLoop();
-
+    //开启对于socket的监听
+    server.socket_monitor();
+    //进入socket主线程运行
+    server.Loop();
     return 0;
 }

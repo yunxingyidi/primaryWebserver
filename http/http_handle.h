@@ -165,8 +165,8 @@ public:
     int bytes_have_send;
     char *m_root;
 
-    int m_TRIGMode;              // 触发模式
-    int m_close_log;             // 是否开启日志
+    int m_trig_mode;              // 触发模式
+    int m_log;             // 是否开启日志
 };
 
 #endif

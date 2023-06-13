@@ -23,12 +23,12 @@ int setnonblocking(int fd)
     return old_option;
 }
 //注册事件
-void addfd(int epollfd, int fd, bool one_shot, int TRIGMode)
+void addfd(int epollfd, int fd, bool one_shot, int trig_mode)
 {
     epoll_event event;
     event.data.fd = fd;
 
-    if (1 == TRIGMode)
+    if (1 == trig_mode)
         event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
     else
         event.events = EPOLLIN | EPOLLRDHUP;
@@ -49,12 +49,12 @@ void removefd(int epollfd, int fd)
 //避免并发访问的竞争条件。
 //通过设置 EPOLLONESHOT，
 //即使多个线程同时监听同一个文件描述符的事件，也只有一个线程能够成功处理事件。
-void modfd(int epollfd, int fd, int ev, int TRIGMode)
+void modfd(int epollfd, int fd, int ev, int trig_mode)
 {
     epoll_event event;
     event.data.fd = fd;
 
-    if (1 == TRIGMode)
+    if (1 == trig_mode)
         event.events = ev | EPOLLET | EPOLLONESHOT | EPOLLRDHUP;
     else
         event.events = ev | EPOLLONESHOT | EPOLLRDHUP;
@@ -63,18 +63,18 @@ void modfd(int epollfd, int fd, int ev, int TRIGMode)
 }
 
 //初始化一个新的连接
-void http_handle::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode, int close_log)
+void http_handle::init(int sockfd, const sockaddr_in &addr, char *root, int trig_mode, int log)
 {
     m_sockfd = sockfd;
     m_address = addr;
-    addfd(m_epollfd, sockfd, true, m_TRIGMode);
+    addfd(m_epollfd, sockfd, true, m_trig_mode);
     m_user_count++;
     //当浏览器出现连接重置时，可能是网站根目录出错或http响应格式出错或者访问的文件中内容完全为空
     m_root = root;
     //触发方式
-    m_TRIGMode = TRIGMode;
+    m_trig_mode = trig_mode;
     //是否使用日志功能
-    m_close_log = close_log;
+    m_log = log;
     //记录传输的字节数
     bytes_to_send = 0;
     bytes_have_send = 0;
@@ -117,7 +117,7 @@ bool http_handle::read()
     int bytes_read = 0;
 
     //LT读取数据
-    if (0 == m_TRIGMode)
+    if (0 == m_trig_mode)
     {
         //<0 出错 =0 连接关闭 >0 接收到数据大小
         //从socket中使用recv进行读取
@@ -292,7 +292,7 @@ bool http_handle::write()
     if (bytes_to_send == 0)
     {
         //写操作需要防止线程竞争
-        modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
+        modfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
 
         //将http处理回归初始状态
         bytes_to_send = 0;
@@ -329,7 +329,7 @@ bool http_handle::write()
             if (errno == EAGAIN)
             {
                 //仍需要将其置为写
-                modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode);
+                modfd(m_epollfd, m_sockfd, EPOLLOUT, m_trig_mode);
                 return true;
             }
             unmap();
@@ -360,7 +360,7 @@ bool http_handle::write()
             //如果发送失败，但不是缓冲区问题，取消映射
             unmap();
             //重新注册写事件,将其置为可读触发
-            modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
+            modfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
             //浏览器的请求为长连接
             if (m_linger)
             {
@@ -656,7 +656,7 @@ void http_handle::process()
     if (read_ret == NO_REQUEST)
     {
         //注册并监听读事件
-        modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
+        modfd(m_epollfd, m_sockfd, EPOLLIN, m_trig_mode);
         return;
     }
     //调用process_write完成报文响应
@@ -666,7 +666,7 @@ void http_handle::process()
         close_conn();
     }
     //注册并监听写事件
-    modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode);
+    modfd(m_epollfd, m_sockfd, EPOLLOUT, m_trig_mode);
 }
 //关闭连接，关闭一个连接，客户总量减一
 void http_handle::close_conn(bool real_close)
